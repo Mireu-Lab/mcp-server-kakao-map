@@ -2,6 +2,8 @@ Kakao Map MCP Server
 
 카카오맵 API를 활용하여 대한민국 내 위치 기반 장소 추천을 제공하는 MCP 서버입니다. 한국어 쿼리에 최적화되어 있습니다.
 
+![img](./image.png)
+
 ## Tool: kakao_map_place_recommender
 
 설명: 사용자 질의에 따라 대한민국 내 다양한 관련 장소(예: 식당, 상점, 공공시설, 관광명소)를 추천합니다. 카카오맵 API 키워드 검색을 사용합니다.

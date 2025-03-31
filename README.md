@@ -4,9 +4,12 @@ English | [한국어]('./docs/ko.md')
 
 MCP Server for the Kakao Map API, enabling location-based place recommendations within South Korea. Optimized for Korean language queries.
 
+![img](./docs/image.png)
+
 ## Tool: kakao_map_place_recommender
 
 Description: Recommends various relevant places (e.g., restaurants, shops, public facilities, attractions) in South Korea based on user queries seeking suggestions. Uses the Kakao Map API keyword search.
+
 
 - `query` (required): Korean keywords describing the type of place and location. Examples: '이태원 맛집', '서울 병원', '강남역 근처 카페'.
 
