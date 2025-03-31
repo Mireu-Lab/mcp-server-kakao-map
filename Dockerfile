@@ -15,7 +15,7 @@ COPY tsconfig.json ./
 # Build the project
 RUN npm run build
 
-
+EXPOSE 3000
 
 # Run the server
 CMD ["node", "dist/index.js"]
