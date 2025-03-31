@@ -1,5 +1,5 @@
 {
-  "name": "mcp-server-kakao-map",
+  "name": "@cgoinglove/mcp-server-kakao-map",
   "description": "Kakao Map MCP server",
   "version": "0.0.1",
   "author": "cgoinglove",
