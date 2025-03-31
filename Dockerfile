@@ -9,13 +9,13 @@ COPY package.json ./
 RUN npm install --ignore-scripts
 
 # Bundle app source
-COPY src ./src
+COPY . .
 COPY tsconfig.json ./
 
 # Build the project
 RUN npm run build
 
-EXPOSE 3000
+
 
 # Run the server
-CMD [ "node", "dist/index.js" ]
+CMD ["node", "dist/index.js"]

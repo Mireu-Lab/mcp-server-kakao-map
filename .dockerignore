@@ -1,0 +1,8 @@
+node_modules
+.git
+.dist
+.husky
+.docs
+smithery.yaml
+pnpm-lock.yaml
+
