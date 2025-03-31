@@ -16,3 +16,5 @@ startCommand:
     |-
     (config) => ({ command: 'node', args: ['dist/index.js'], env: { KAKAO_API_KEY: config.KAKAO_API_KEY } })
   type: stdio
+  exampleConfig:
+    KAKAO_API_KEY: Your Kakao Map API Key
