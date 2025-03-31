@@ -1,13 +1,16 @@
 FROM node:22.12-alpine AS builder
 
 WORKDIR /app
+COPY package.json ./
+RUN npm install
 
-COPY src /app
-COPY tsconfig.json /tsconfig.json
 
-RUN --mount=type=cache,target=/root/.npm npm install
+# Copy the rest of the application code
+COPY src ./src
+COPY tsconfig.json ./
 
-RUN --mount=type=cache,target=/root/.npm-production npm ci --ignore-scripts --omit-dev
+# Build the application
+RUN npm run build
 
 
 FROM node:22-alpine AS release
@@ -17,8 +20,6 @@ WORKDIR /app
 COPY --from=builder /app/dist /app/dist
 COPY --from=builder /app/package.json /app/package.json
 
-ENV NODE_ENV=production
-
-RUN npm ci --ignore-scripts --omit-dev
+RUN npm ci --only=production
 
 ENTRYPOINT ["node", "/app/dist/index.js"]
