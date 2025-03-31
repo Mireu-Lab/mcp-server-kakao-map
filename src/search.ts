@@ -78,7 +78,10 @@ export const search: ToolCallback<typeof SearchSchema> = async (options) => {
     content: [
       {
         type: 'text',
-        text: JSON.stringify(results, null, 2),
+        text: `
+        Please provide all details including place_name, address_name, category_name, place_url, and phone from the JSON results to the user.
+        
+        Recommended places JSON FORMAT:\n${JSON.stringify(results, null, 2)}`.trim(),
       },
     ],
   };
