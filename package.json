@@ -14,9 +14,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && shx chmod +x dist/*.js",
+    "build": "tsc",
     "watch": "tsc --watch",
-    "prepare": "husky install && npm run build",
     "test": "vitest",
     "test:server": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js",
     "lint-staged": "lint-staged",
