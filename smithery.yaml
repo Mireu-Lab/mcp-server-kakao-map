@@ -1,17 +1,23 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
 startCommand:
+  type: stdio
   configSchema:
     # JSON Schema defining the configuration options for the MCP.
     type: object
     required:
-      - KAKAO_API_KEY
+      - kakaoMapApiKey
     properties:
-      KAKAO_API_KEY:
+      kakaoMapApiKey:
         type: string
         description: The REST API key for accessing the Kakao Map (Local) API.
   commandFunction:
-    # A function that produces the CLI command to start the MCP on stdio.
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
     |-
-    (config) => ({ command: 'node', args: ['dist/index.js'], env: { KAKAO_API_KEY: config.KAKAO_API_KEY } })
-  type: stdio
+    (config) => ({ 
+        command: 'node', 
+        args: ['dist/index.js'], 
+        env: { KAKAO_API_KEY: config.kakaoMapApiKey } 
+    })
+
   exampleConfig:
-    KAKAO_API_KEY: Your Kakao Map API Key
+    kakaoMapApiKey: Your Kakao Map API Key

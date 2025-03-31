@@ -1,7 +1,11 @@
+#!/usr/bin/env node
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-
 import { search, SearchSchema } from './search.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const server = new McpServer({
   name: 'mcp-server-kakao-map',
