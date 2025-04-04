@@ -78,7 +78,7 @@ function fetchWebDocuments(query: string, apiKey: string) {
       searchParams: {
         query,
         page: 1,
-        size: 3,
+        size: 5,
       },
       responseType: 'json',
     })
@@ -100,6 +100,24 @@ function fetchImageDocument(query: string, apiKey: string) {
     })
     .then((res) => res.body.documents[0]);
 }
+
+const SYSTEM_PROMPT = `
+Using the provided JSON results, compile a detailed and visually appealing Markdown summary for the user.
+
+Each place **MUST** include:
+
+## [{place_name}]({place_url})
+
+![Image]({image_url})
+
+- **Address**: {address_name}
+- **Category**: {category_name}
+- **Contact**: {phone}
+- **Summary**: Briefly summarize the overall sentiment or notable points based on provided comments. Consider aspects such as positive features, negative issues, and unique highlights.
+
+Note:
+- The summary should be directly derived by analyzing and condensing the provided comments.
+- Ensure all listed elements (title with link, image, address, category, contact, and summary) are always included for every place.`;
 
 export const search: ToolCallback<typeof SearchSchema> = async (options) => {
   const KAKAO_API_KEY = process.env.KAKAO_API_KEY;
@@ -156,21 +174,7 @@ export const search: ToolCallback<typeof SearchSchema> = async (options) => {
     content: [
       {
         type: 'text',
-        text: `Using the provided JSON results, compile a detailed and visually appealing Markdown summary for the user. Each place should include:
-
-- **Place Name**: Create a clickable Markdown link that opens \`place_url\`.
-
-- **Address**: Clearly display the full address.
-
-- **Category**: Mention the category clearly.
-
-- **Contact**: Include the phone number if available; if not, indicate "Not available".
-
-- **Image**: Display the image using the provided \`image_url\`.
-
-- **Comments Summary**: Review the provided comments (\`title\` and \`contents\`) and summarize the overall sentiment or key points briefly (positive, negative, notable features, etc.).
-
-Ensure the Markdown formatting is clean and easy to navigate, enhancing readability and user experience.`,
+        text: SYSTEM_PROMPT,
       },
       {
         type: 'text',
