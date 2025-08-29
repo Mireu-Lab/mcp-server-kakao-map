@@ -21,3 +21,4 @@ server.tool(
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
+console.log('MCP server is running with Kakao Map Place Recommender tool...');
