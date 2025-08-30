@@ -226,10 +226,6 @@ func searchTool(ctx context.Context, req *mcp.CallToolRequest, options SearchSch
 // --- 서버 실행 ---
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("Warning: .env file not found, reading from environment")
-	}
-
 	kakaoAPIKey = os.Getenv("KAKAO_API_KEY")
 	if kakaoAPIKey == "" {
 		log.Fatal("FATAL: KAKAO_API_KEY environment variable is not set.")
