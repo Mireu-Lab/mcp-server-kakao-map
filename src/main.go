@@ -261,7 +261,16 @@ func loggingMiddleware(next http.Handler) http.Handler {
 // --- 서버 실행 ---
 
 func main() {
-	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logLevel := slog.LevelInfo
+	if os.Getenv("LOG_LEVEL") == "DEBUG" {
+		logLevel = slog.LevelDebug
+	}
+
+	opts := &slog.HandlerOptions{
+		AddSource: true, // 소스 코드 위치(파일, 라인)를 로그에 추가
+		Level:     logLevel,
+	}
+	logger = slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
 
 	kakaoAPIKey = os.Getenv("KAKAO_API_KEY")

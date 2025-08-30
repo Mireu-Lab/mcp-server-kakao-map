@@ -8,5 +8,6 @@ services:
     
     environment:
       - KAKAO_API_KEY=your-api-key-here
+      - LOG_LEVEL=DEBUG
     ports:
       - 8080:8080
