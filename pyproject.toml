@@ -1,0 +1,10 @@
+[project]
+name = "mcp-server-kakao-map"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp>=1.13.1",
+    "pydantic-core>=2.33.2",
+]
