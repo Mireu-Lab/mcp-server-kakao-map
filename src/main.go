@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/joho/godotenv"
 	// 실제 존재하는 공식 SDK 경로
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -22,11 +21,11 @@ type SearchSchema struct {
 }
 
 type MapDocument struct {
-	PlaceName      string `json:"place_name"`
-	AddressName    string `json:"address_name"`
-	CategoryName   string `json:"category_name"`
-	PlaceURL       string `json:"place_url"`
-	Phone          string `json:"phone"`
+	PlaceName    string `json:"place_name"`
+	AddressName  string `json:"address_name"`
+	CategoryName string `json:"category_name"`
+	PlaceURL     string `json:"place_url"`
+	Phone        string `json:"phone"`
 }
 
 type KakaoLocalSearchResponse struct {
@@ -221,7 +220,6 @@ func searchTool(ctx context.Context, req *mcp.CallToolRequest, options SearchSch
 		Content: []mcp.Content{&mcp.TextContent{Text: "Search complete. All results have been streamed."}},
 	}, nil, nil
 }
-
 
 // --- 서버 실행 ---
 
