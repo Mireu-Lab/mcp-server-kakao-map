@@ -1,0 +1,12 @@
+version: "3"
+
+services:
+  mcp_server:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    
+    environment:
+      - KAKAO_API_KEY=your-api-key-here
+    ports:
+      - 8080:8080

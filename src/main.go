@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"sync"
@@ -64,6 +64,7 @@ type KakaoLocalSearchResult struct {
 var (
 	kakaoAPIKey string
 	httpClient  = &http.Client{Timeout: 10 * time.Second}
+	logger      *slog.Logger
 )
 
 const (
@@ -97,16 +98,20 @@ func makeKakaoRequest(ctx context.Context, url string, target interface{}) error
 	}
 	req.Header.Set("Authorization", "KakaoAK "+kakaoAPIKey)
 
+	logger.Debug("Making Kakao API request", "url", url)
 	resp, err := httpClient.Do(req)
 	if err != nil {
+		logger.Error("Kakao API request failed", "url", url, "error", err)
 		return fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		logger.Warn("Kakao API request returned non-200 status", "url", url, "status", resp.Status)
 		return fmt.Errorf("API request failed with status: %s", resp.Status)
 	}
 
+	logger.Debug("Kakao API request successful", "url", url, "status", resp.Status)
 	return json.NewDecoder(resp.Body).Decode(target)
 }
 
@@ -114,14 +119,22 @@ func fetchMapDocuments(ctx context.Context, query string) ([]MapDocument, error)
 	var response KakaoLocalSearchResponse
 	url := fmt.Sprintf("%s?query=%s", kakaoMapURL, query)
 	err := makeKakaoRequest(ctx, url, &response)
-	return response.Documents, err
+	if err != nil {
+		return nil, err
+	}
+	logger.Info("Fetched map documents", "query", query, "count", len(response.Documents))
+	return response.Documents, nil
 }
 
 func fetchWebDocuments(ctx context.Context, query string) ([]WebDocument, error) {
 	var response DaumWebSearchResponse
 	url := fmt.Sprintf("%s/web?query=%s&page=1&size=5", daumSearchURL, query)
 	err := makeKakaoRequest(ctx, url, &response)
-	return response.Documents, err
+	if err != nil {
+		return nil, err
+	}
+	logger.Debug("Fetched web documents", "query", query, "count", len(response.Documents))
+	return response.Documents, nil
 }
 
 func fetchImageDocument(ctx context.Context, query string) (ImageDocument, error) {
@@ -132,14 +145,17 @@ func fetchImageDocument(ctx context.Context, query string) (ImageDocument, error
 		return ImageDocument{}, err
 	}
 	if len(response.Documents) > 0 {
+		logger.Debug("Fetched image document", "query", query, "image_url", response.Documents[0].ImageURL)
 		return response.Documents[0], nil
 	}
+	logger.Debug("No image document found", "query", query)
 	return ImageDocument{}, nil
 }
 
 // --- MCP 도구 콜백 함수 ---
 
 func searchTool(ctx context.Context, req *mcp.CallToolRequest, options SearchSchema) (*mcp.CallToolResult, any, error) {
+	logger.Info("searchTool called", "query", options.Query)
 	// 1. GetSession()이 반환하는 mcp.Session 인터페이스를 *mcp.ServerSession 타입으로 단언합니다.
 	serverSession, ok := req.GetSession().(*mcp.ServerSession)
 	if !ok {
@@ -147,12 +163,14 @@ func searchTool(ctx context.Context, req *mcp.CallToolRequest, options SearchSch
 	}
 
 	if kakaoAPIKey == "" {
+		logger.Error("Tool Execution Failed: KAKAO_API_KEY is not configured.")
 		return &mcp.CallToolResult{
 			IsError: true,
 			Content: []mcp.Content{&mcp.TextContent{Text: "Tool Execution Failed: KAKAO_API_KEY is not configured."}},
 		}, nil, nil
 	}
 	if options.Query == "" {
+		logger.Warn("Query is empty")
 		return &mcp.CallToolResult{
 			IsError: true,
 			Content: []mcp.Content{&mcp.TextContent{Text: "Query is empty"}},
@@ -160,6 +178,7 @@ func searchTool(ctx context.Context, req *mcp.CallToolRequest, options SearchSch
 	}
 
 	// 2. 타입 단언으로 얻은 serverSession 변수를 사용하여 NotifyProgress를 호출합니다.
+	logger.Info("Notifying progress with system prompt")
 	_ = serverSession.NotifyProgress(ctx, &mcp.ProgressNotificationParams{
 		ProgressToken: req.Params.GetProgressToken(),
 		Message:       systemPrompt,
@@ -167,10 +186,12 @@ func searchTool(ctx context.Context, req *mcp.CallToolRequest, options SearchSch
 
 	mapDocuments, err := fetchMapDocuments(ctx, options.Query)
 	if err != nil {
+		logger.Error("Failed to fetch map documents", "query", options.Query, "error", err)
 		return nil, nil, fmt.Errorf("failed to fetch map documents: %w", err)
 	}
 
 	for _, doc := range mapDocuments {
+		logger.Debug("Processing map document", "place_name", doc.PlaceName)
 		var wg sync.WaitGroup
 		var webDocs []WebDocument
 		var imgDoc ImageDocument
@@ -188,7 +209,7 @@ func searchTool(ctx context.Context, req *mcp.CallToolRequest, options SearchSch
 		wg.Wait()
 
 		if webErr != nil || imgErr != nil {
-			log.Printf("Error fetching details for %s: webErr=%v, imgErr=%v", doc.PlaceName, webErr, imgErr)
+			logger.Error("Error fetching details for place", "place_name", doc.PlaceName, "web_error", webErr, "image_error", imgErr)
 			continue
 		}
 
@@ -204,11 +225,12 @@ func searchTool(ctx context.Context, req *mcp.CallToolRequest, options SearchSch
 
 		resultBytes, err := json.Marshal(result)
 		if err != nil {
-			log.Printf("Failed to marshal result for %s: %v", doc.PlaceName, err)
+			logger.Error("Failed to marshal result", "place_name", doc.PlaceName, "error", err)
 			continue
 		}
 
 		// 3. 여기서도 serverSession 변수를 사용합니다.
+		logger.Debug("Notifying progress with search result", "place_name", doc.PlaceName)
 		_ = serverSession.NotifyProgress(ctx, &mcp.ProgressNotificationParams{
 			ProgressToken: req.Params.GetProgressToken(),
 			// Value 필드는 MCP 프로토콜의 ProgressNotificationParams에 없으므로 Message 필드를 사용합니다.
@@ -216,17 +238,36 @@ func searchTool(ctx context.Context, req *mcp.CallToolRequest, options SearchSch
 		})
 	}
 
+	logger.Info("Search complete. All results have been streamed.")
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: "Search complete. All results have been streamed."}},
 	}, nil, nil
 }
 
+// --- HTTP 로깅 미들웨어 ---
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		logger.Info("HTTP request",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"duration", time.Since(start),
+			"remote_addr", r.RemoteAddr,
+		)
+	})
+}
+
 // --- 서버 실행 ---
 
 func main() {
+	logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	kakaoAPIKey = os.Getenv("KAKAO_API_KEY")
 	if kakaoAPIKey == "" {
-		log.Fatal("FATAL: KAKAO_API_KEY environment variable is not set.")
+		logger.Error("FATAL: KAKAO_API_KEY environment variable is not set.")
+		os.Exit(1)
 	}
 
 	mcpServer := mcp.NewServer(&mcp.Implementation{
@@ -244,11 +285,12 @@ func main() {
 	}, nil)
 
 	mux := http.NewServeMux()
-	mux.Handle("/", handler)
+	mux.Handle("/", loggingMiddleware(handler))
 
 	port := "8080"
-	log.Printf("MCP server with SSE is running on http://localhost:%s", port)
+	logger.Info("MCP server with SSE is running", "url", "http://localhost:"+port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		log.Fatalf("Failed to start HTTP server: %v", err)
+		logger.Error("Failed to start HTTP server", "error", err)
+		os.Exit(1)
 	}
 }
